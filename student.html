@@ -11,6 +11,14 @@
             text-align: center;
         }
 
+        form {
+            overflow: hidden;
+        }
+
+        input {
+            border: 2px solid gainsboro;
+        }
+
         .details-container {
             display: grid;
             max-width: 600px;
@@ -20,7 +28,6 @@
             background-color: rgba(255, 255, 255, 0.4);
             color: #1E1E1E;
             padding: 1rem;
-            /* border: 2px solid #000957; */
             border-radius: 20px;
         }
 
@@ -36,6 +43,10 @@
             gap: 1rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
+        }
+
+        .btn-container button {
+            width: 100%;
         }
 
         .btn {
@@ -58,7 +69,13 @@
         dialog {
             margin: auto;
             border: none;
-            background-color: transparent;
+            background-color: white;
+            border-radius: 10px;
+        }
+
+        dialog::backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            ;
         }
     </style>
 </head>
@@ -96,12 +113,12 @@
 
     <div class="btn-container">
         <button onclick="openUpdateModal()" class="btn green">Update</button>
-        <button class="btn red">Delete</button>
+        <button onclick="openDeleteModal()" class="btn red">Delete</button>
     </div>
 
     <dialog>
 
-        <form>
+        <form id="updateForm">
             <div class="form-container">
                 <div class="item">
                     <label for="fName">
@@ -144,12 +161,28 @@
         </form>
     </dialog>
 
+    <dialog id="deleteModal">
+        <div>
+            <h3>Are you sure you want to delete this record?</h3>
+            <div class="btn-container">
+                <button onclick="closeModal()">Cancel</button>
+                <button id="deleteBtn">Proceed</button>
+            </div>
+            <button>
+
+            </button>
+
+        </div>
+    </dialog>
+
     <script>
 
         const str = window.location.search
         const param = new URLSearchParams(str)
         const id = param.get('id')
         const updateDialog = document.querySelector('dialog')
+        const deleteDialog = document.getElementById('deleteModal')
+        const updateForm = document.getElementById("updateForm")
 
         const firstName = document.getElementById('firstName')
         const lastName = document.getElementById('lastName')
@@ -158,12 +191,66 @@
         const program = document.getElementById('prg')
         const year = document.getElementById('yr')
 
+        const fName = document.getElementById("fName")
+        const lName = document.getElementById("lName")
+        const dob = document.getElementById("dob")
+        const prg = document.getElementById("program")
+        const count = document.getElementById("country")
+        const yr = document.getElementById("year")
+
+        const deleteBtn = document.getElementById('deleteBtn')
 
         function openUpdateModal() {
             updateDialog.showModal()
         }
 
+        function openDeleteModal() {
+            deleteDialog.showModal()
+        }
+
+        function closeModal() {
+            updateDialog.close()
+            deleteDialog.close()
+        }
+
         let data = {}
+
+        updateForm.addEventListener('submit', async e => {
+            e.preventDefault()
+
+            try {
+                const formData = new FormData(e.target)
+                const data = JSON.stringify(Object.fromEntries(formData))
+                console.log(data)
+                const res = await fetch(`https://dbms-dxyg.onrender.com/students/${id}`, {
+                    method: "PATCH",
+                    headers: {
+                        'Content-Type': "application/json"
+                    },
+                    body: data
+                })
+
+                const dt = await res.json()
+                console.log(dt)
+                window.location.reload()
+            } catch (err) {
+                console.log(err)
+            }
+        })
+
+        deleteBtn.addEventListener('click', async e => {
+            try {
+                const res = await fetch(`https://dbms-dxyg.onrender.com/students/${id}`, {
+                    method: "DELETE",
+                })
+
+                const dt = await res.json()
+                console.log(dt)
+                window.location.replace('./index.html')
+            } catch (err) {
+                console.log(err)
+            }
+        })
 
         function renderValues(obj) {
             firstName.textContent = obj.fName
@@ -172,13 +259,22 @@
             country.textContent = obj.country
             program.textContent = obj.program
             year.textContent = obj.year
+
+            fName.value = obj.fName
+            lName.value = obj.lName
+            dob.value = obj.isoDate
+            prg.value = obj.program
+            count.value = obj.country
+            yr.value = obj.year
+
+            console.log(obj.isoDate)
         }
 
         async function fetchStudent() {
             try {
                 const res = await fetch(`https://dbms-dxyg.onrender.com/students/${id}`)
                 data = await res.json()
-
+                data.isoDate = new Date(data.dob).toISOString().split("T")[0]
                 const newDate = new Date(data.dob)
                 const date = new Intl.DateTimeFormat('en-US', {
                     year: 'numeric',
