@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Table</title>
-    <link rel="stylesheet" href="./css/index.css" >
+    <link rel="stylesheet" href="./css/index.css">
     <style>
         table,
         form {
@@ -79,9 +79,6 @@
             background-color: gainsboro;
             color: black;
         }
-
-        
-
     </style>
 </head>
 
@@ -96,6 +93,20 @@
             </li>
         </ul>
     </nav>
+
+
+    <div id="loader">
+        <svg xmlns="http://www.w3.org/2000/svg" style="margin:auto; background:transparent; display:block;" width="50px"
+            height="50px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+            <circle cx="50" cy="50" r="32" stroke-width="8" stroke="#3498db"
+                stroke-dasharray="50.26548245743669 50.26548245743669" fill="none" stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s"
+                    keyTimes="0;1" values="0 50 50;360 50 50"></animateTransform>
+            </circle>
+        </svg>
+
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -158,51 +169,82 @@
     <script>
         const tb = document.querySelector('tbody')
         const form = document.querySelector('form')
+        const loader = document.getElementById('loader')
 
         function createEl(arg) {
             return document.createElement(arg)
         }
 
-        async function fetchStudents() {
-            try {
-                const body = await fetch("https://dbms-dxyg.onrender.com/students")
-                const data = await body.json()
-                console.log(data)
-                data.map(x => {
-                    const newDate = new Date(x.dob)
-                    const date = new Intl.DateTimeFormat('en-US', {
-                        year: 'numeric',
-                        month: "numeric",
-                        day: "numeric"
-                    }).format(newDate)
+        function fetchStudents() {
+            const xhr = new XMLHttpRequest();
+            const url = "https://dbms-dxyg.onrender.com/students";
+            let data = [];
 
-                    const row = createEl('tr')
-                    const fName = createEl('td')
-                    const lName = createEl('td')
-                    const dob = createEl('td')
-                    const program = createEl('td')
-                    const year = createEl('td')
-                    const action = createEl('td')
+            xhr.open("GET", url, true);
 
-                    fName.innerText = x.fName
-                    lName.innerText = x.lName
-                    dob.innerText = date
-                    program.innerText = x.program
-                    year.innerText = x.year
-                    action.innerHTML = `<a class="action" href="student.html?id=${x._id}">View more</a>`
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 3) {
+                    console.log("loading");
+                    loader.style.display = "none";
+                }
 
-                    row.appendChild(fName)
-                    row.appendChild(lName)
-                    row.appendChild(dob)
-                    row.appendChild(program)
-                    row.appendChild(year)
-                    row.appendChild(action)
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            loader.style.display = "block";
+                            data = JSON.parse(xhr.responseText);
 
-                    tb.appendChild(row)
-                })
-            } catch (err) {
-                console.log(err)
-            }
+                            data.forEach(x => {
+                                const newDate = new Date(x.dob);
+                                const date = new Intl.DateTimeFormat('en-US', {
+                                    year: 'numeric',
+                                    month: "numeric",
+                                    day: "numeric"
+                                }).format(newDate);
+
+                                const row = createEl('tr');
+                                const fName = createEl('td');
+                                const lName = createEl('td');
+                                const dob = createEl('td');
+                                const program = createEl('td');
+                                const year = createEl('td');
+                                const action = createEl('td');
+
+                                fName.innerText = x.fName;
+                                lName.innerText = x.lName;
+                                dob.innerText = date;
+                                program.innerText = x.program;
+                                year.innerText = x.year;
+                                action.innerHTML = `<a class="action" href="student.html?id=${x._id}">View more</a>`;
+
+                                row.appendChild(fName);
+                                row.appendChild(lName);
+                                row.appendChild(dob);
+                                row.appendChild(program);
+                                row.appendChild(year);
+                                row.appendChild(action);
+
+                                tb.appendChild(row);
+                            });
+                        } catch (err) {
+                            console.error("Error parsing JSON:", err);
+                        }
+                    } else if (xhr.status === 304) {
+                        console.log(xhr.status);
+                        loader.style.display = "none";
+                    } else {
+                        console.error("Error:", xhr.status, xhr.statusText);
+                    }
+                }
+
+           
+            };
+
+            xhr.onerror = function () {
+                console.error("Request failed.");
+            };
+
+            xhr.send();
         }
 
         fetchStudents()
