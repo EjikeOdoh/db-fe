@@ -64,3 +64,15 @@ input {
     grid-template-columns: 1fr 1fr;
     gap: 15px;
 }
+
+dialog {
+    margin: auto;
+    border: none;
+    background-color: white;
+    border-radius: 10px;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+    ;
+}
