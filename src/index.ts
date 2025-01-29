@@ -3,6 +3,11 @@ const tb = document.querySelector('tbody')!
 const form = document.querySelector('form')!
 const loader = document.getElementById('loader')!
 
+const searchForm = document.getElementById('search-form') as HTMLFormElement
+
+const btnContainer = document.getElementById('btn-container')!
+
+
 
 type Student = {
     _id: string,
@@ -14,8 +19,28 @@ type Student = {
     year: number
 }
 
+type ApiResponse = {
+    totalCount: number,
+    previousPage: string | null,
+    nextPage: string | null,
+    currentPage: string,
+    data: Student[]
+}
+
+searchForm.addEventListener('submit', async (e: Event) => {
+    e.preventDefault()
+    const formData = new FormData(searchForm)
+    const name = formData.get('name')?.toString().split(' ').sort().map(str => str.toLowerCase()).join("")
+
+    const url = "https://dbms-dxyg.onrender.com/students/search?name=" + name
+    console.log(url)
+
+    await fetchStudents(url)
+    searchForm.reset()
+})
+
 // Api details
-const url: string = "https://dbms-dxyg.onrender.com/students";
+const url: string = "https://dbms-dxyg.onrender.com/students?program";
 
 function createEl(arg: string): HTMLElement {
     return document.createElement(arg)
@@ -23,65 +48,111 @@ function createEl(arg: string): HTMLElement {
 
 let isLoading: boolean;
 
-async function fetchStudents(): Promise<Student[]> {
-    let data: Student[] = []
+async function fetchStudents(url: string): Promise<void> {
+    const token = localStorage.getItem('token')!
     try {
-        isLoading = true
-        loader.style.display = "block"
-        table.style.display = 'none'
-        const res = await fetch(url)
-        data = await res.json()
-       
+        // Set loading state
+        isLoading = true;
+        loader.style.display = "block";
+        table.style.display = "none";
+
+        // Fetch data
+        const res = await 
+        fetchWithToken(url, 'GET', token )
+
+        // Check if the response is okay
+        if (!res.ok) {
+            throw new Error(`Failed to fetch data: ${res.status} ${res.statusText}`);
+        }
+
+        const data: ApiResponse = await res.json();
+        const { currentPage, data: students, nextPage, previousPage, totalCount } = data;
+
+        // Render the students
+        renderStudents(students);
+
+        // Update buttons
+        btnContainer.innerHTML = `
+            <button 
+                ${previousPage ? `onclick="fetchStudents('${encodeURI("https://" + previousPage)}')"` : "disabled"}>
+                Previous
+            </button>          
+            <button 
+                ${nextPage ? `onclick="fetchStudents('${encodeURI("https://" + nextPage)}')"` : "disabled"}>
+                Next
+            </button>
+        `;
     } catch (error) {
-        console.log(error)
+        console.error("Error fetching students:", error);
     } finally {
-        isLoading = false
-        loader.style.display = "none"
-        table.style.display = 'block'
+        // Reset loading state
+        isLoading = false;
+        loader.style.display = "none";
+        table.style.display = "block";
     }
-    return data
 }
+
 
 function renderStudents(arr: Student[]) {
-    arr.forEach(x => {
-        const newDate = new Date(x.dob);
-        const date = new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: "numeric",
-            day: "numeric"
-        }).format(newDate);
+    tb.replaceChildren()
+    if (arr.length > 0) {
+        arr.forEach(x => {
+            const newDate = new Date(x.dob);
+            const date = new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: "numeric",
+                day: "numeric"
+            }).format(newDate);
 
-        const row = createEl('tr');
-        const fName = createEl('td');
-        const lName = createEl('td');
-        const dob = createEl('td');
-        const program = createEl('td');
-        const year = createEl('td');
-        const action = createEl('td');
+            const row = createEl('tr');
+            const fName = createEl('td');
+            const lName = createEl('td');
+            const dob = createEl('td');
+            const program = createEl('td');
+            const year = createEl('td');
+            const action = createEl('td');
 
-        fName.innerText = x.fName;
-        lName.innerText = x.lName;
-        dob.innerText = date;
-        program.innerText = x.program;
-        year.innerText = x.year.toString();
-        action.innerHTML = `<a class="action" href="student.html?id=${x._id}">View more</a>`;
+            fName.innerText = x.fName;
+            lName.innerText = x.lName;
+            dob.innerText = date;
+            program.innerText = x.program;
+            year.innerText = x.year.toString();
+            action.innerHTML = `<a class="action" href="student.html?id=${x._id}">View more</a>`;
 
-        row.appendChild(fName);
-        row.appendChild(lName);
-        row.appendChild(dob);
-        row.appendChild(program);
-        row.appendChild(year);
-        row.appendChild(action);
+            row.appendChild(fName);
+            row.appendChild(lName);
+            row.appendChild(dob);
+            row.appendChild(program);
+            row.appendChild(year);
+            row.appendChild(action);
 
-        tb.appendChild(row);
+            tb.appendChild(row);
+        }
+        )
+
     }
-    )
+
+    return
 }
 
-async function load() {
-    const data = await fetchStudents()
-    renderStudents(data)
+fetchStudents(url)
+
+
+function handleSelect(evt: Event): void {
+    const el = evt.target as HTMLSelectElement
+    console.log(el.value)
+
 }
 
-load()
 
+function fetchWithToken(url: string,method: string, token?: string, body?:any) {
+    
+    return fetch(url, {
+        method,
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        body
+    })
+
+}

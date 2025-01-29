@@ -271,9 +271,23 @@
         }
 
         async function fetchStudent() {
+            const token = localStorage.getItem('token')
+            console.log(token);
+            
             try {
-                const res = await fetch(`https://dbms-dxyg.onrender.com/students/${id}`)
+                const res = await fetch(`https://dbms-dxyg.onrender.com/students/${id}`,{
+                    method:'GET',
+                    headers:{
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+
+                if(!res.ok) {
+                    throw new Error
+                }
+
                 data = await res.json()
+
                 data.isoDate = new Date(data.dob).toISOString().split("T")[0]
                 const newDate = new Date(data.dob)
                 const date = new Intl.DateTimeFormat('en-US', {

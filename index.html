@@ -7,17 +7,35 @@
     <title>Student Table</title>
     <link rel="stylesheet" href="./css/index.css">
     <style>
+        main {}
+
         table,
         form {
             margin-top: 4rem;
-            width: 600px;
+            width: 800px;
             margin-inline: auto;
+            margin: auto;
 
+        }
+
+        table {
+            table-layout: fixed !important;
+            border: 2px solid #444;
+            border-collapse: collapse;
         }
 
         thead {
             background: black;
-            color: gainsboro
+            color: gainsboro;
+        }
+
+        thead th {
+            position: sticky;
+        }
+
+        thead,
+        tbody {
+            width: 100%;
         }
 
         th,
@@ -106,23 +124,43 @@
         nav li a.active-link {
             background-color: aqua;
         }
+
+        button {
+            padding: 5px 2rem;
+        }
     </style>
 </head>
 
 <body>
-    <nav>
-        <ul>
-            <li class="home-li">
-                <a href="index.html">Home</a>
-            </li>
-            <li>
-                <a class="" href="student.html">Student</a>
-            </li>
-        </ul>
-    </nav>
+    <header>
+        <nav>
+            <ul>
+                <li class="home-li">
+                    <a href="index.html">Home</a>
+                </li>
+                <li>
+                    <a class="" href="student.html">Student</a>
+                </li>
+            </ul>
+        </nav>
+        <form id="search-form">
+            <input required name="name" type="search">
+            <button>Search</button>
+        </form>
+    </header>
 
     <main>
-        <button onclick="openModal()">Add Student</button>
+        <div class="btn-container">
+            <button onclick="openModal()">Add Student</button>
+            <select onchange="handleSelect(event)" id="program">
+                <option value="">All</option>
+                <option value="ASCG">ASCG</option>
+                <option value="CBC">CBC</option>
+                <option value="SSC">SSC</option>
+                <option value="DSC">DSC</option>
+            </select>
+
+        </div>
         <div style="display: none" id="loader">
             <svg xmlns="http://www.w3.org/2000/svg" style="margin:auto; background:transparent; display:block;"
                 width="50px" height="50px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
@@ -133,9 +171,7 @@
                 </circle>
             </svg>
         </div>
-
-
-        <table>
+        <table width="800px">
             <thead>
                 <tr>
                     <th>First Name</th>
@@ -143,17 +179,19 @@
                     <th>DOB</th>
                     <th>Program</th>
                     <th>Year</th>
-                    <th></th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-
             </tbody>
         </table>
 
+        <div id="btn-container">
+
+        </div>
+
         <dialog>
             <!-- Add Student Form -->
-
             <form>
                 <div class="form-container">
                     <div class="item">
@@ -196,125 +234,12 @@
                 <button>Submit</button>
             </form>
         </dialog>
-
-
-
-
-
     </main>
 
 
 
     <script src="./js/index.js"></script>
     <script src="./js/dialog.js"></script>
-    <!-- <script>
-        const tb = document.querySelector('tbody')
-        const form = document.querySelector('form')
-        const loader = document.getElementById('loader')
-
-        function createEl(arg) {
-            return document.createElement(arg)
-        }
-
-        function fetchStudents() {
-            const xhr = new XMLHttpRequest();
-            const url = "https://dbms-dxyg.onrender.com/students";
-            let data = [];
-
-            xhr.open("GET", url, true);
-
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 3) {
-                    console.log("loading");
-                    loader.style.display = "none";
-                }
-
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        try {
-                            loader.style.display = "block";
-                            data = JSON.parse(xhr.responseText);
-
-                            data.forEach(x => {
-                                const newDate = new Date(x.dob);
-                                const date = new Intl.DateTimeFormat('en-US', {
-                                    year: 'numeric',
-                                    month: "numeric",
-                                    day: "numeric"
-                                }).format(newDate);
-
-                                const row = createEl('tr');
-                                const fName = createEl('td');
-                                const lName = createEl('td');
-                                const dob = createEl('td');
-                                const program = createEl('td');
-                                const year = createEl('td');
-                                const action = createEl('td');
-
-                                fName.innerText = x.fName;
-                                lName.innerText = x.lName;
-                                dob.innerText = date;
-                                program.innerText = x.program;
-                                year.innerText = x.year;
-                                action.innerHTML = `<a class="action" href="student.html?id=${x._id}">View more</a>`;
-
-                                row.appendChild(fName);
-                                row.appendChild(lName);
-                                row.appendChild(dob);
-                                row.appendChild(program);
-                                row.appendChild(year);
-                                row.appendChild(action);
-
-                                tb.appendChild(row);
-                            });
-                        } catch (err) {
-                            console.error("Error parsing JSON:", err);
-                        }
-                    } else if (xhr.status === 304) {
-                        console.log(xhr.status);
-                        loader.style.display = "none";
-                    } else {
-                        console.error("Error:", xhr.status, xhr.statusText);
-                    }
-                }
-
-           
-            };
-
-            xhr.onerror = function () {
-                console.error("Request failed.");
-            };
-
-            xhr.send();
-        }
-
-
-        fetchStudents()
-
-        form.addEventListener('submit', async e => {
-            e.preventDefault()
-
-            try {
-                const formData = new FormData(e.target)
-                const data = JSON.stringify(Object.fromEntries(formData))
-                console.log(data)
-                const res = await fetch("https://dbms-dxyg.onrender.com/students", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': "application/json"
-                    },
-                    body: data
-                })
-
-                const dt = await res.json()
-                window.location.reload()
-            } catch (err) {
-                console.log(err)
-            }
-        })
-
-
-    </script> -->
 </body>
 
 </html>
